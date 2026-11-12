@@ -1,0 +1,32 @@
+version: 1
+external:
+  data_root: "data/private"
+  crsp_root: "data/private/us/crsp"
+  crsp_raw_dir: "data/private/us/crsp/raw"
+  crsp_processed_dir: "data/private/us/crsp/processed"
+  crsp_metadata_dir: "data/private/us/crsp/metadata"
+  project_1_root: "data/private/other_project"
+  read_only: true
+project:
+  root: "."
+  data_interim: "data/interim"
+  data_processed: "data/processed"
+  model_artifacts: "artifacts/models"
+  reports_figures: "reports/figures"
+  reports_tables: "reports/tables"
+  reports_memo: "reports/memo"
+  logs: "logs"
+path_policy:
+  allow_raw_writes: false
+  allow_project_1_writes: false
+  allow_external_output_paths: false
+  use_pathlib: true
+  nested_project_2_exception: false
+  allowed_runtime_write_roots:
+    - "data/interim"
+    - "data/processed"
+    - "artifacts/models"
+    - "reports/figures"
+    - "reports/tables"
+    - "reports/memo"
+    - "logs"

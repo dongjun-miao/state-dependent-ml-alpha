@@ -1,0 +1,11 @@
+data/private/
+data/interim/
+data/processed/
+artifacts/
+logs/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.env
+*.ipynb_checkpoints/

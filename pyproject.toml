@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "state-dependent-alpha"
+version = "0.8.0"
+description = "State-dependent cross-sectional selection of interpretable price-based signals in U.S. equities."
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+authors = [{ name = "Dongjun Miao" }]
+dependencies = [
+  "joblib>=1.4",
+  "numpy>=2.0",
+  "pandas>=2.2",
+  "pyarrow>=18",
+  "PyYAML>=6.0",
+  "scikit-learn>=1.6",
+  "scipy>=1.14",
+  "statsmodels>=0.14",
+]
+
+[project.optional-dependencies]
+tree = ["lightgbm>=4.5"]
+research = [
+  "jupyter>=1.1",
+  "matplotlib>=3.9",
+  "nbformat>=5.10",
+  "Pillow>=10.4",
+  "pypdf>=5.1",
+  "reportlab>=4.2",
+  "seaborn>=0.13",
+]
+dev = [
+  "pytest>=8.3",
+  "pytest-cov>=6.0",
+  "ruff>=0.9",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/state_alpha"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

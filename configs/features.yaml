@@ -1,0 +1,294 @@
+version: 2
+status: frozen_for_gate3_build
+frozen_at: "2026-07-31"
+
+information_boundary:
+  formation_time: close_t
+  planned_execution: close_t_plus_1
+  feature_window_end: t
+  development_diagnostics: "2000-2012 only"
+  strict_oos_period: "2013-2025"
+  oos_selection_prohibited: true
+  labels_in_feature_artifact: false
+
+price_representation:
+  primary_chain: "compound CIZ DlyRetx (return_ex_distribution)"
+  rationale: "DlyRetx is CRSP's price return without dividends and already reflects corporate actions."
+  raw_ohlc_primary_use: false
+  raw_ohlc_status: "reserved for a separately adjusted robustness specification"
+  raw_price_use: "current log-price state and quote/dollar-volume scaling only"
+
+feature_budget:
+  maximum_primary_features: 40
+  frozen_feature_count: 38
+  counts_by_role:
+    alpha_signal: 14
+    stock_state: 6
+    liquidity_state: 6
+    attention_crowding_state: 4
+    market_state: 6
+    control: 2
+  duplicate_feature_names_allowed: false
+  require_economic_rationale: true
+  require_role_tag: true
+
+features:
+  - name: rs_excess_return_20d
+    role: alpha_signal
+    family: relative_strength
+    inputs: [return_total, market_vw_return]
+    definition: "20-session stock gross return divided by market gross return, minus one."
+    rationale: "Short-horizon market-relative strength."
+  - name: rs_excess_return_60d
+    role: alpha_signal
+    family: relative_strength
+    inputs: [return_total, market_vw_return]
+    definition: "60-session stock gross return divided by market gross return, minus one."
+    rationale: "Intermediate-horizon market-relative strength."
+  - name: rs_excess_return_126d
+    role: alpha_signal
+    family: relative_strength
+    inputs: [return_total, market_vw_return]
+    definition: "126-session stock gross return divided by market gross return, minus one."
+    rationale: "Persistent market-relative strength."
+  - name: rs_percentile_60d
+    role: alpha_signal
+    family: relative_strength
+    inputs: [rs_excess_return_60d, universe_primary]
+    definition: "Same-date percentile rank inside the frozen primary universe."
+    rationale: "Comparable cross-sectional relative-strength scale without future fitting."
+  - name: rs_acceleration_20_minus_60d
+    role: alpha_signal
+    family: relative_strength
+    inputs: [rs_excess_return_20d, rs_excess_return_60d]
+    definition: "20-session relative strength minus 60-session relative strength."
+    rationale: "Acceleration or decay in relative strength."
+  - name: price_distance_prior_high_126d
+    role: alpha_signal
+    family: price_trend
+    inputs: [return_ex_distribution]
+    definition: "DlyRetx price index at t divided by its maximum over t-126 through t-1, minus one."
+    rationale: "Breakout distance relative to an ex-ante prior high."
+  - name: price_distance_ma_20d
+    role: alpha_signal
+    family: price_trend
+    inputs: [return_ex_distribution]
+    definition: "DlyRetx price index divided by its 20-session arithmetic moving average, minus one."
+    rationale: "Compact short-term trend-location measure."
+  - name: trend_distance_vol_normalized_60d
+    role: alpha_signal
+    family: price_trend
+    inputs: [return_ex_distribution, return_total]
+    definition: "Distance from 60-session price-index average divided by 60-session total-return volatility scaled to the window."
+    rationale: "Trend distance on a comparable risk scale."
+  - name: reversal_5d
+    role: alpha_signal
+    family: oversold_recovery
+    inputs: [return_total]
+    definition: "Negative of the compounded 5-session total return."
+    rationale: "Short-horizon oversold/reversal pressure."
+  - name: drawdown_20d
+    role: alpha_signal
+    family: oversold_recovery
+    inputs: [return_ex_distribution]
+    definition: "DlyRetx price index divided by its 20-session high, minus one."
+    rationale: "Near-term depth below a local high."
+  - name: drawdown_60d
+    role: alpha_signal
+    family: oversold_recovery
+    inputs: [return_ex_distribution]
+    definition: "DlyRetx price index divided by its 60-session high, minus one."
+    rationale: "Intermediate drawdown severity."
+  - name: distance_52w_high
+    role: alpha_signal
+    family: oversold_recovery
+    inputs: [return_ex_distribution]
+    definition: "DlyRetx price index divided by its 252-session high, minus one."
+    rationale: "Longer-horizon reference-point distance."
+  - name: momentum_slope_reversal
+    role: alpha_signal
+    family: oversold_recovery
+    inputs: [return_total]
+    definition: "5-session return minus one quarter of the 20-session return."
+    rationale: "Recent rebound relative to the preceding monthly slope."
+  - name: recovery_above_ma_10d
+    role: alpha_signal
+    family: oversold_recovery
+    inputs: [return_ex_distribution]
+    definition: "DlyRetx price index divided by its 10-session arithmetic moving average, minus one."
+    rationale: "Whether an oversold stock has begun to recover."
+  - name: log_lagged_market_cap
+    role: stock_state
+    family: stock
+    inputs: [lag_market_cap_usd]
+    definition: "Natural log of frozen-universe t-1 market capitalization in USD."
+    rationale: "Size state and exposure control."
+  - name: beta_252d
+    role: stock_state
+    family: stock
+    inputs: [return_total, market_vw_return]
+    definition: "252-session population covariance with the value-weighted market divided by market variance."
+    rationale: "Systematic risk state."
+  - name: realized_volatility_20d
+    role: stock_state
+    family: stock
+    inputs: [return_total]
+    definition: "20-session population standard deviation annualized by sqrt(252)."
+    rationale: "Current stock-risk state."
+  - name: realized_volatility_60d
+    role: stock_state
+    family: stock
+    inputs: [return_total]
+    definition: "60-session population standard deviation annualized by sqrt(252)."
+    rationale: "Medium-horizon stock-risk state."
+  - name: idiosyncratic_volatility_60d
+    role: stock_state
+    family: stock
+    inputs: [return_total, market_vw_return]
+    definition: "Annualized residual volatility from a 60-session single-market-factor moment identity."
+    rationale: "Firm-specific uncertainty state."
+  - name: momentum_126_21d
+    role: stock_state
+    family: stock
+    inputs: [return_total]
+    definition: "Compounded total return over t-125 through t-21."
+    rationale: "Medium-term stock trend excluding the most recent month."
+  - name: log_adv20_usd
+    role: liquidity_state
+    family: liquidity
+    inputs: [lag_adv20_usd]
+    definition: "Natural log of the frozen-universe t-1 consecutive 20-session average dollar volume."
+    rationale: "Tradable liquidity scale known before formation."
+  - name: turnover_20d
+    role: liquidity_state
+    family: liquidity
+    inputs: [volume, shares_outstanding_source]
+    definition: "20-session mean of volume divided by shares outstanding."
+    rationale: "Trading intensity relative to float."
+  - name: amihud_illiquidity_20d
+    role: liquidity_state
+    family: liquidity
+    inputs: [return_total, price_raw, volume]
+    definition: "20-session mean absolute return per dollar volume, multiplied by 1e6."
+    rationale: "Price impact proxy."
+  - name: zero_return_frequency_20d
+    role: liquidity_state
+    family: liquidity
+    inputs: [return_total]
+    definition: "Fraction of exactly zero total-return sessions in the last 20 sessions."
+    rationale: "Low-trading and price-staleness proxy."
+  - name: log_price
+    role: liquidity_state
+    family: liquidity
+    inputs: [price_raw]
+    definition: "Natural log of absolute current CRSP price."
+    rationale: "Price-level state related to frictions."
+  - name: quoted_spread_proxy
+    role: liquidity_state
+    family: liquidity
+    inputs: [bid_raw, ask_raw]
+    definition: "Positive valid ask-minus-bid divided by midpoint; otherwise missing."
+    rationale: "Direct implementation-friction proxy with missingness preserved."
+  - name: abnormal_turnover_20d
+    role: attention_crowding_state
+    family: attention_crowding
+    inputs: [volume, shares_outstanding_source]
+    definition: "Log current turnover divided by mean turnover over t-20 through t-1."
+    rationale: "Unusual contemporaneous trading attention."
+  - name: extreme_absolute_return
+    role: attention_crowding_state
+    family: attention_crowding
+    inputs: [return_total]
+    definition: "Absolute return at t divided by daily volatility over t-60 through t-1."
+    rationale: "Price-shock attention state using a strictly prior scale."
+  - name: maximum_daily_return_20d
+    role: attention_crowding_state
+    family: attention_crowding
+    inputs: [return_total]
+    definition: "Maximum daily total return over the last 20 sessions."
+    rationale: "Lottery-like recent return concentration."
+  - name: volatility_expansion_20_60d
+    role: attention_crowding_state
+    family: attention_crowding
+    inputs: [realized_volatility_20d, realized_volatility_60d]
+    definition: "20-session realized volatility divided by 60-session realized volatility, minus one."
+    rationale: "Recent risk/attention expansion."
+  - name: market_return_20d
+    role: market_state
+    family: market
+    inputs: [market_vw_return]
+    definition: "Compounded value-weighted market return over 20 sessions."
+    rationale: "Continuous short-horizon market trend."
+  - name: market_return_60d
+    role: market_state
+    family: market
+    inputs: [market_vw_return]
+    definition: "Compounded value-weighted market return over 60 sessions."
+    rationale: "Continuous intermediate market trend."
+  - name: market_realized_volatility_20d
+    role: market_state
+    family: market
+    inputs: [market_vw_return]
+    definition: "20-session population standard deviation of market returns annualized by sqrt(252)."
+    rationale: "Continuous market-risk state."
+  - name: market_drawdown_126d
+    role: market_state
+    family: market
+    inputs: [market_vw_return]
+    definition: "Market total-return index divided by its 126-session high, minus one."
+    rationale: "Continuous market stress state."
+  - name: cross_sectional_return_dispersion
+    role: market_state
+    family: market
+    inputs: [return_total, universe_primary]
+    definition: "Same-date population standard deviation across the frozen primary universe, requiring at least 30 stocks."
+    rationale: "Cross-sectional opportunity and stress state."
+  - name: market_breadth_20d
+    role: market_state
+    family: market
+    inputs: [return_total, universe_primary]
+    definition: "20-session mean of the same-date fraction of frozen-primary stocks with positive total return."
+    rationale: "Continuous participation/breadth state."
+  - name: industry_code_2digit
+    role: control
+    family: categorical_control
+    inputs: [siccd]
+    definition: "Two-digit SIC group at t; retained as categorical."
+    rationale: "Broad industry exposure control."
+  - name: exchange
+    role: control
+    family: categorical_control
+    inputs: [primary_exchange]
+    definition: "CRSP primary exchange code N, Q, or A at t; retained as categorical."
+    rationale: "Trading-venue exposure control."
+
+preprocessing:
+  fixed_random_seed: 20260731
+  cross_sectional_rank_scope: "same date, frozen primary universe"
+  winsorization:
+    apply_in_feature_artifact: false
+    later_fit_scope: "training period or same-day cross section only"
+    lower_percentile: 0.5
+    upper_percentile: 99.5
+  imputation:
+    apply_in_feature_artifact: false
+    later_fit_scope: "training period only"
+    add_missing_indicators_later: true
+  categorical_encoding:
+    apply_in_feature_artifact: false
+    later_fit_scope: "training period only"
+
+diagnostics:
+  coverage_and_stability: "all years, reported by year; never used to revise the frozen list using OOS"
+  correlation_matrix: "deterministic capped sample from 2000-2012 continuous features only"
+  label_correlation_prohibited: true
+  performance_diagnostic_prohibited: true
+
+output_contract:
+  root: "data/interim/features_v1"
+  partitioning: "panel/year=YYYY/part-00000.parquet"
+  include_analysis_base_rows: true
+  include_labels: false
+  floating_storage: float32
+  atomic_publish: true
+  overwrite: false

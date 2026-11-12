@@ -1,0 +1,47 @@
+version: 2
+
+timing:
+  feature_information_cutoff: "formation date t close"
+  earliest_baseline_execution: "t+1 close"
+  first_included_return_interval: "t+1 close to t+2 close"
+  no_same_day_signal_return_overlap: true
+
+primary:
+  name: fwd_total_return_rank_10d
+  horizon_trading_days: 10
+  start_offset_from_formation_close: 1
+  end_offset_from_formation_close: 11
+  use_total_return: true
+  include_delisting_effect: true
+  residualization: "deferred Gate 4 robustness label; Gate 3 controls are frozen"
+  transform: "cross-sectional percentile rank centered at zero"
+
+robustness:
+  - name: fwd_excess_return_5d
+    horizon_trading_days: 5
+  - name: fwd_excess_return_10d
+    horizon_trading_days: 10
+  - name: fwd_excess_return_20d
+    horizon_trading_days: 20
+  - name: fwd_residual_return_rank_20d
+    horizon_trading_days: 20
+
+overlap_controls:
+  maximum_label_horizon_trading_days: 20
+  purge_training_observations_overlapping_validation: true
+  embargo_trading_days: 20
+  hac_lag_minimum: 20
+
+delisting:
+  source_contract: >-
+    CRSP CIZ DlyRet already incorporates a calculable delisting return.
+  valid_terminal_return: >-
+    Compound through the DlyDelFlg row, liquidate to cash, and hold cash
+    through the fixed label end.
+  missing_terminal_return_primary: missing
+  missing_terminal_return_sensitivities:
+    - terminal_value_loss100
+    - terminal_value_zero
+  zero_bound_interpretation: >-
+    Sensitivity upper bound only; never describe as an observed or imputed
+    CRSP return.

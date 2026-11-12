@@ -1,0 +1,65 @@
+version: 1
+status: frozen_presentation_only
+frozen_at: "2026-07-31T18:10:00+08:00"
+
+governance:
+  analysis_classification: presentation_only_after_gate6
+  empirical_changes_prohibited: true
+  data_feature_model_portfolio_changes_prohibited: true
+  winner_selection_prohibited: true
+  interpretation_changes_prohibited: true
+  source_gate6_config_sha256: "d1818f2c210b1d5ddb8566b2fea3d06fc27bd099feb042fb9dcd2bcbd383e85d"
+  source_gate6_validation_passed: true
+  report_scope: "Package the frozen Gate 5 and Gate 6 evidence without recomputation of empirical results."
+
+locked_sources:
+  - path: configs/gate6.yaml
+    sha256: d1818f2c210b1d5ddb8566b2fea3d06fc27bd099feb042fb9dcd2bcbd383e85d
+  - path: data/processed/gate6_v1/manifest.json
+    sha256: fdd8d09d605a1cbb255cc826c9255fe4434b0cf88196b02338fa6913f58f3032
+  - path: data/processed/gate6_v1/evidence/daily_portfolios.parquet
+    sha256: 45e1171ad53472561bc561df5573ff552a0a8340e64a8d47f6bef0072ccc33b2
+  - path: reports/tables/gate5_boundary_clean_2014_2025.csv
+    sha256: 4871aa0b16e7b67ce0862b376ecd5378ea278a6059e9ac6f2f10f43649f2d7fe
+  - path: reports/tables/gate5_paired_comparisons.csv
+    sha256: 22375966fb5a281c7288327e91574a86146b8674e5ebdd110f9c42efc5a79851
+  - path: reports/tables/gate6_performance_summary.csv
+    sha256: 319702b55001aa444440c275266496ad7495b310c8061bceeb92d1792b0ed36d
+  - path: reports/tables/gate6_cost_stress.csv
+    sha256: 3558c1c2433267e5566ca13df473af636e422739bcd8117a362e206e6185fe01
+  - path: reports/tables/gate6_exposure_summary.csv
+    sha256: 0e86af0c9a076ad5561ae009f65922c563e6ce32c7151804a75b0c197977deeb
+  - path: reports/tables/gate6_liquidity_bucket_summary.csv
+    sha256: b2f3571ccc050a3c65f315be4628ddb5f85072c478257cf333360140f3319401
+  - path: reports/tables/gate6_missing_return_sensitivity.csv
+    sha256: 6a212e7cae9a4ae0e15c5b7d3e754cbe572d65a9e63df59433d10f97c55af614
+  - path: reports/tables/gate6_participation_summary.csv
+    sha256: 2a9f845027b38e5b72e2bcef272805f2958983b0186e2810077e4125156a9546
+  - path: reports/tables/gate6_formation_domain_audit.csv
+    sha256: 2ea103cf4d97402764a2809da083d43d67b7374f2ea96bb03cec067f6b902691
+  - path: reports/tables/gate6_validation.json
+    sha256: 0c549821fc013c896df92ad572984e44c874b31d294eee465b400aa1c7baeee3
+
+figures:
+  count: 7
+  output_directory: reports/figures/gate7
+  files:
+    - figure_01_research_pipeline.png
+    - figure_02_boundary_clean_rank_ic.png
+    - figure_03_raw_rank_cost_stress.png
+    - figure_04_neutral_rank_cost_stress.png
+    - figure_05_role_based_wealth_paths.png
+    - figure_06_exposure_neutralization.png
+    - figure_07_liquidity_and_capacity.png
+
+report:
+  output_pdf: output/pdf/state_dependent_alpha_research_report.pdf
+  interview_brief: reports/memo/GATE7_INTERVIEW_BRIEF.md
+  reproducibility_sheet: reports/memo/GATE7_REPRODUCIBILITY.md
+  validation_report: reports/tables/gate7_validation.json
+  audit_manifest: output/pdf/gate7_audit_manifest.json
+  primary_period: boundary_clean_primary
+  primary_dates: ["2014-01-02", "2025-12-31"]
+  primary_weighting: rank_weight
+  missing_return_path: loss100
+

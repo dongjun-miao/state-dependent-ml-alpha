@@ -1,0 +1,47 @@
+{
+  "ridge_explicit_interactions": {
+    "rank_ic": 0.03610849863216146,
+    "rank_ic_nw_t": 5.3245065742310675,
+    "raw_gross_ann": 0.07450941199156787,
+    "raw_sharpe": 0.5967973066414056,
+    "raw_break_even_bps": 32.84900887289258,
+    "neutral_gross_ann": 0.04763584103998938,
+    "neutral_sharpe": 0.761021021017641
+  },
+  "tree_alpha_state": {
+    "rank_ic": 0.03771678253365275,
+    "rank_ic_nw_t": 5.328118097929487,
+    "raw_gross_ann": 0.0971177499595806,
+    "raw_sharpe": 0.686414292020537,
+    "raw_break_even_bps": 34.27307752757989,
+    "neutral_gross_ann": 0.07937934131549887,
+    "neutral_sharpe": 1.1433020763050763
+  },
+  "tree_state_only": {
+    "rank_ic": 0.03389146989173624,
+    "rank_ic_nw_t": 4.4281924135511765,
+    "raw_gross_ann": 0.06428926896278261,
+    "raw_sharpe": 0.4261899283849597,
+    "raw_break_even_bps": 24.23665132329512,
+    "neutral_gross_ann": 0.051575903973847814,
+    "neutral_sharpe": 0.7649557948600718
+  },
+  "linear_capped_gate": {
+    "rank_ic": 0.0051521721606024974,
+    "rank_ic_nw_t": 1.3305718007068466,
+    "raw_gross_ann": 0.03198548629669045,
+    "raw_sharpe": 0.3399334383945651,
+    "raw_break_even_bps": 9.76932434013736,
+    "neutral_gross_ann": 0.019706894817173148,
+    "neutral_sharpe": 0.28388838394154225
+  },
+  "tree_capped_gate": {
+    "rank_ic": 0.0045649039099207355,
+    "rank_ic_nw_t": 0.9689017641878662,
+    "raw_gross_ann": 0.026045961479180202,
+    "raw_sharpe": 0.2685842953778161,
+    "raw_break_even_bps": 7.082923598391436,
+    "neutral_gross_ann": 0.017460007523995846,
+    "neutral_sharpe": 0.3083756765956081
+  }
+}

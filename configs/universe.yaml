@@ -1,0 +1,139 @@
+version: 3
+status: phase2b_primary_rule_frozen
+
+security_eligibility:
+  # CRSP CIZ categorical equivalents; legacy SHRCD/EXCHCD are absent.
+  security_type: ["EQTY"]
+  security_subtype: ["COM"]
+  share_type_candidates: ["NS"]
+  us_incorporation_policy: compare_and_freeze_during_development
+  issuer_type_policy: report_corp_reit_acor_separately
+  primary_exchange: ["N", "Q", "A"]
+  trading_status: ["A"]
+  use_point_in_time_fields_only: true
+  include_historical_exits: true
+  require_delisting_aware_total_return: true
+  delisting_contract_status: ciz_dlyret_includes_calculable_delisting_return
+
+timing:
+  eligibility_lag_trading_days: 1
+  price_lag_trading_days: 1
+  market_cap_lag_trading_days: 1
+  liquidity_lag_trading_days: 1
+
+candidate_absolute_filters:
+  minimum_price_usd: [3.0, 5.0]
+  minimum_market_cap_usd: [100000000, 300000000]
+  minimum_adv20_usd: [1000000, 5000000]
+  minimum_history_trading_days: 252
+
+candidate_cross_sectional_filters:
+  exclude_bottom_market_cap_percent: [10, 20]
+  exclude_bottom_adv20_percent: [10, 20, 30]
+
+candidate_rules:
+  - id: abs_p3_m100_adv1_all
+    kind: absolute
+    minimum_price_usd: 3.0
+    minimum_market_cap_usd: 100000000
+    minimum_adv20_usd: 1000000
+    require_us_incorporated: false
+  - id: abs_p3_m100_adv1_us
+    kind: absolute
+    minimum_price_usd: 3.0
+    minimum_market_cap_usd: 100000000
+    minimum_adv20_usd: 1000000
+    require_us_incorporated: true
+  - id: abs_p5_m300_adv5_all
+    kind: absolute
+    minimum_price_usd: 5.0
+    minimum_market_cap_usd: 300000000
+    minimum_adv20_usd: 5000000
+    require_us_incorporated: false
+  - id: abs_p5_m300_adv5_us
+    kind: absolute
+    minimum_price_usd: 5.0
+    minimum_market_cap_usd: 300000000
+    minimum_adv20_usd: 5000000
+    require_us_incorporated: true
+  - id: pct_p5_m10_adv10_all
+    kind: percentile
+    minimum_price_usd: 5.0
+    exclude_bottom_market_cap_percent: 10
+    exclude_bottom_adv20_percent: 10
+    require_us_incorporated: false
+  - id: pct_p5_m10_adv10_us
+    kind: percentile
+    minimum_price_usd: 5.0
+    exclude_bottom_market_cap_percent: 10
+    exclude_bottom_adv20_percent: 10
+    require_us_incorporated: true
+  - id: pct_p5_m20_adv20_all
+    kind: percentile
+    minimum_price_usd: 5.0
+    exclude_bottom_market_cap_percent: 20
+    exclude_bottom_adv20_percent: 20
+    require_us_incorporated: false
+  - id: pct_p5_m20_adv20_us
+    kind: percentile
+    minimum_price_usd: 5.0
+    exclude_bottom_market_cap_percent: 20
+    exclude_bottom_adv20_percent: 20
+    require_us_incorporated: true
+  - id: pct_p5_m20_adv30_all
+    kind: percentile
+    minimum_price_usd: 5.0
+    exclude_bottom_market_cap_percent: 20
+    exclude_bottom_adv20_percent: 30
+    require_us_incorporated: false
+  - id: pct_p5_m20_adv30_us
+    kind: percentile
+    minimum_price_usd: 5.0
+    exclude_bottom_market_cap_percent: 20
+    exclude_bottom_adv20_percent: 30
+    require_us_incorporated: true
+
+selection_protocol:
+  development_start: "2000-01-03"
+  development_end: "2012-12-31"
+  may_use_forward_returns: false
+  may_use_signal_performance: false
+  minimum_history_trading_days: 252
+  adv_window_trading_days: 20
+  require_immediately_previous_market_session: true
+  objectives:
+    - economically_meaningful_price_and_liquidity_scale
+    - sufficient_daily_cross_section_in_every_development_year
+    - limited_development_period_breadth_drift
+  rationale: >-
+    Absolute thresholds are interpretable in current dollars but drift with
+    inflation and market growth. Date-level percentiles preserve breadth and
+    historical comparability but change the economic scale of the universe.
+
+frozen_primary_rule_id: abs_p3_m100_adv1_us
+freeze_record:
+  date: "2026-07-31"
+  information_used: "2000-2012 universe distributions only"
+  development_analysis_base_rows: 14891569
+  development_primary_rows: 7020368
+  development_primary_share: 0.4714323924
+  mean_annual_median_daily_names: 2350.6
+  annual_median_daily_names_range: [2106.5, 2726.5]
+  annual_median_daily_names_cv: 0.0926726082
+  minimum_daily_names_after_warmup: 1811
+  median_annual_selected_p10:
+    price_usd: 7.855
+    market_cap_usd: 276026761.5
+    adv20_usd: 1783208.4625
+  rationale: >-
+    This rule preserves explicit economic price, capitalization, and liquidity
+    floors; keeps a broad daily cross section in every post-warmup development
+    year; has the lowest development-period breadth drift among the predeclared
+    rules; and uses USIncFlg to keep the title's U.S.-equity definition stable.
+    It was frozen without inspecting signals, labels, IC, portfolios, or
+    2013-2025 outcomes.
+
+multiple_share_classes:
+  diagnostic_key: permco
+  baseline_policy: retain_eligible_permnos_and_report_permco_concentration
+  robustness_policy: largest_lagged_market_cap_share_class_per_permco

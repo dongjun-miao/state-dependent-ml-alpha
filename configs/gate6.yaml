@@ -1,0 +1,184 @@
+version: 1
+status: frozen_after_gate5_before_gate6_pnl
+frozen_at: "2026-07-31T17:13:09+08:00"
+random_seed: 20260731
+
+governance:
+  analysis_classification: secondary_locked_post_gate5
+  gate4_and_gate5_oos_already_observed: true
+  confirmatory_untouched_oos_claim_allowed: false
+  strict_oos_used_for_portfolio_selection: false
+  repeated_oos_tuning_prohibited: true
+  model_feature_hyperparameter_changes_prohibited: true
+  winner_selection_prohibited: true
+  carry_every_score_forward: true
+  source_gate5_schema: state_alpha_gate5_secondary_locked_v1
+  source_gate5_config_sha256: "ff134a97372436b6b27b81f6de99d9e5d589157abf6433c39b96e0e9ee1185e0"
+  source_models_config_sha256: "1ba44fdb18662e32c50717b712b7cb427ba173743aadb8dfaa05c3d9665f99b2"
+  source_gate5_manifest_sha256: "21ee0f2c52137fe19979b22b1f44440af6f2900d6a94b15a7ea3329458b3a820"
+  source_gate4_manifest_sha256: "4d0b3a5fabdfcd18ebbb90b2264b8291d19933200e1eaff3061af5fa827346c0"
+  source_features_manifest_sha256: "be8d4cf9ca00e947ad95bc03f2cce008e4c9b8ac8a907cb6355d58a6212acf99"
+  source_phase2b_manifest_sha256: "e49d5ba5355b4733e517dcaff2483a9b1bdd0063943958ab0a8b01a0d338d50d"
+  source_canonical_manifest_sha256: "83601484f45ad8fbeed1c047e2a4cf21fb21195ef3a90d2278d09930fa1fe8cf"
+  label_filtered_gate5_predictions_prohibited_for_formation: true
+  pre_pnl_formation_domain_audit:
+    formation_dates: 652
+    point_in_time_primary_rows: 1596066
+    execution_valid_rows: 1595677
+    gate5_label_valid_rows: 1595539
+    primary_rows_with_missing_10d_label: 527
+
+periods:
+  transition_sensitivity: ["2013-01-02", "2013-12-31"]
+  boundary_clean_primary: ["2014-01-02", "2025-12-31"]
+  full_secondary_oos: ["2013-01-02", "2025-12-31"]
+
+scores:
+  - base_family_score
+  - ridge_alpha_only
+  - ridge_state_only
+  - ridge_main_effects
+  - ridge_explicit_interactions
+  - tree_alpha_only
+  - tree_state_only
+  - tree_alpha_state
+  - linear_capped_gate
+  - tree_capped_gate
+
+formation_domain:
+  source: "Gate 3 feature panel joined one-to-one to Phase 2B point-in-time fields"
+  eligibility_at_formation: universe_primary
+  future_label_columns_allowed: false
+  execution_valid_used_for_ranking: false
+  rescore_rule: "Apply each frozen annual Gate 4/Gate 5 model state to the complete point-in-time formation universe."
+  alpha_rank_rule: "Recompute same-date alpha and family ranks across the complete point-in-time primary universe."
+  score_missingness: "Rank each score on its available same-date observations; do not impute a missing portfolio score."
+
+formation:
+  cadence: every_fifth_market_session
+  anchor: first_2013_friday_with_complete_primary_formation_coverage
+  anchor_session_id: 3271
+  final_formation_requires_complete_horizon: true
+  formation_information_set: close_t
+  execution_close_offset_sessions: 1
+  first_return_offset_sessions: 2
+  last_return_offset_sessions: 11
+  holding_return_sessions: 10
+  expected_overlapping_sleeves: 2
+  fixed_capital_fraction_per_cohort: 0.5
+  cash_return: 0.0
+  cohort_notional: fixed_from_formation
+  daily_renormalization: false
+
+construction:
+  quantiles: 10
+  long_bin: 10
+  short_bin: 1
+  gross_weight_before_sleeve: 1.0
+  net_weight_before_sleeve: 0.0
+  leg_gross_weight: 0.5
+  score_rank_method: average
+  equal_weight:
+    long: equal
+    short: equal
+  rank_weight:
+    long: "proportional to max(percentile_rank - 0.90, 0)"
+    short: "proportional to max(0.10 - percentile_rank, 0)"
+  zero_is_cash_signals:
+    - linear_capped_gate
+    - tree_capped_gate
+  execution_failure:
+    rule: "Apply the frozen formation weights, set unfilled names to zero, and hold the unmatched notional in zero-return cash."
+    rerank_after_observing_fill: false
+    redistribute_after_observing_fill: false
+
+portfolio_variants:
+  main:
+    weighting: [equal_weight, rank_weight]
+    neutralization: [raw, risk_neutralized]
+  liquidity_buckets:
+    weighting: [equal_weight]
+    neutralization: [raw]
+    adv_terciles: [adv_low, adv_mid, adv_high]
+    amihud_terciles: [amihud_liquid, amihud_mid, amihud_illiquid]
+
+neutralization:
+  timing: before_execution_fill
+  method: "Support-preserving least-squares projection of raw weights onto the orthogonal complement of the constraint matrix."
+  constraints:
+    - beta_252d
+    - log_lagged_market_cap
+    - industry_division_0_to_9_plus_missing
+  continuous_standardization: same_date_primary_universe_zscore
+  continuous_missing_value: same_date_median_then_zscore
+  target_tolerance: 1.0e-8
+  post_fill_reoptimization: false
+
+realized_returns:
+  source: canonical_v1_return_total
+  valid_delisting: "Apply the terminal total return, then hold proceeds as cash."
+  missing_or_invalid_held_return_primary: "Apply a conservative -100% terminal-value convention at the first missing/invalid held return, then hold cash."
+  missing_or_invalid_held_return_sensitivity: "Apply a 0% terminal-value convention at the first missing/invalid held return, then hold cash."
+  warning: "The -100% and 0% paths are explicit missing-terminal-value bounds/conventions, not estimated realized returns."
+  dataset_end: "Do not form a cohort unless all ten return sessions exist in the fixed market calendar."
+
+turnover_and_costs:
+  one_way_turnover: "0.5 * L1 change in aggregate risky weights at each close, netting simultaneous scheduled cohort entries and exits by security."
+  include_entry_and_scheduled_exit: true
+  terminal_cash_conversion_is_trade: false
+  cost_application: "net_return = gross_return - 2 * one_way_turnover * one_way_cost_bps / 10000"
+  one_way_cost_bps: [5, 10, 20, 30]
+  break_even_bps: "10000 * mean_daily_gross_return / (2 * mean_daily_one_way_turnover)"
+  realized_cost_claim_allowed: false
+
+exposures:
+  timing: formation_characteristics_carried_through_cohort_holding_period
+  continuous:
+    - beta_252d
+    - log_lagged_market_cap
+    - log_price
+    - log_adv20_usd
+    - amihud_illiquidity_20d
+    - quoted_spread_proxy
+  continuous_reporting: same_date_primary_universe_zscore_except_beta_also_reported_in_raw_units
+  industry: industry_division_0_to_9_plus_missing
+  concentration:
+    - cohort_hhi
+    - cohort_effective_names
+    - cohort_max_absolute_weight
+  adv_reference_nav_usd: [10000000, 100000000, 1000000000]
+  participation_thresholds: [0.01, 0.05, 0.10]
+  participation_trade: cohort_entry_absolute_weight
+  participation_adv: formation_lag_adv20_usd
+  warning: "Reference-NAV participation is a diagnostic, not a capacity estimate."
+
+liquidity_buckets:
+  formation_method: same_date_tercile
+  adv_variable: log_adv20_usd
+  amihud_variable: amihud_illiquidity_20d
+  score_sorting: independently_within_each_bucket
+  primary_table_scope: raw_equal_weight
+
+statistics:
+  trading_days_per_year: 252
+  hac_lags: 20
+  annualized_return: arithmetic_mean_times_252
+  annualized_volatility: daily_standard_deviation_times_sqrt_252
+  sharpe: annualized_return_divided_by_annualized_volatility
+  drawdown: compounded_daily_return_path
+  regime_source: gate4_v1_market_regimes
+  report_periods:
+    - full_secondary_oos
+    - transition_sensitivity
+    - boundary_clean_primary
+  primary_missing_return_path: loss100
+  sensitivity_missing_return_path: zero
+
+outputs:
+  artifact: data/processed/gate6_v1
+  save_formation_scores: true
+  save_daily_portfolios: true
+  save_cohort_diagnostics: true
+  no_overwrite: true
+  atomic_publish: true
+  hash_every_file: true

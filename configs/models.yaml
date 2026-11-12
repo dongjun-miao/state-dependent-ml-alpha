@@ -1,0 +1,157 @@
+version: 3
+status: frozen_before_gate4_outcomes
+frozen_at: "2026-07-31"
+random_seed: 20260731
+
+gate4_scope:
+  primary_label: fwd_total_return_rank_10d
+  realized_return_diagnostic: fwd_total_return_10d
+  universe: universe_primary
+  require_valid_primary_label: true
+  feature_label_join: "exact one-to-one on permno, permco, date, session_id"
+  evidence_order:
+    - univariate_rank_ic
+    - quintile_decile_sorts
+    - state_conditioned_double_sorts
+    - fama_macbeth
+    - ridge_explicit_interactions
+    - elastic_net_explicit_interactions
+  prohibited:
+    - tree_model
+    - feature_revision_using_strict_oos
+    - repeated_strict_oos_tuning
+    - random_stock_date_split
+
+periods:
+  initial_train: ["2001-01-02", "2009-12-31"]
+  model_selection_validation: ["2010-01-04", "2012-12-31"]
+  strict_oos: ["2013-01-02", "2025-12-31"]
+  retrain_frequency: annual
+
+alpha_families:
+  relative_strength:
+    minimum_nonmissing_members: 4
+    members:
+      rs_excess_return_20d: 1
+      rs_excess_return_60d: 1
+      rs_excess_return_126d: 1
+      rs_percentile_60d: 1
+      rs_acceleration_20_minus_60d: 1
+  price_trend:
+    minimum_nonmissing_members: 2
+    members:
+      price_distance_prior_high_126d: 1
+      price_distance_ma_20d: 1
+      trend_distance_vol_normalized_60d: 1
+  oversold_recovery:
+    minimum_nonmissing_members: 4
+    members:
+      reversal_5d: 1
+      drawdown_20d: -1
+      drawdown_60d: -1
+      distance_52w_high: -1
+      momentum_slope_reversal: 1
+      recovery_above_ma_10d: 1
+
+classical_baselines:
+  complete_case_across_alpha_signals: true
+  minimum_names_per_date: 100
+  sort_quantiles: [5, 10]
+  individual_alpha_sort_quantiles: [10]
+  hac_lags: 20
+  turnover:
+    report_for: family_decile_sorts
+    convention: "one-way equal-weight membership turnover, averaged across long and short legs"
+  double_sort:
+    state_quantiles: 5
+    alpha_quantiles_within_state: 5
+    state_features:
+      - log_lagged_market_cap
+      - realized_volatility_60d
+      - momentum_126_21d
+      - log_adv20_usd
+      - amihud_illiquidity_20d
+      - abnormal_turnover_20d
+  fama_macbeth:
+    dependent: fwd_total_return_rank_10d
+    family_predictors:
+      - family_relative_strength
+      - family_price_trend
+      - family_oversold_recovery
+    state_predictors:
+      - realized_volatility_60d
+      - log_adv20_usd
+      - abnormal_turnover_20d
+    controls:
+      - log_lagged_market_cap
+      - beta_252d
+      - industry_division_fixed_effects
+      - exchange_fixed_effects
+    include_family_by_state_interactions: true
+    minimum_daily_observations: 200
+    hac_lags: 20
+
+linear_models:
+  optimizer_sample:
+    method: "deterministic chronological stride within each year"
+    maximum_rows_per_year: 25000
+    evaluation_is_sampled: false
+  continuous_base_features: "all 36 non-categorical frozen Gate 3 features plus 3 alpha-family composites"
+  categorical_controls:
+    industry_code_2digit: "fixed one-hot categories 0-99 plus missing"
+    exchange: "fixed one-hot categories N/Q/A plus missing"
+  explicit_interactions:
+    alpha_family_composites:
+      - family_relative_strength
+      - family_price_trend
+      - family_oversold_recovery
+    state_features:
+      - log_lagged_market_cap
+      - beta_252d
+      - realized_volatility_60d
+      - momentum_126_21d
+      - log_adv20_usd
+      - amihud_illiquidity_20d
+      - abnormal_turnover_20d
+      - extreme_absolute_return
+      - market_return_60d
+      - market_realized_volatility_20d
+  preprocessing:
+    winsorization_percentiles: [0.5, 99.5]
+    imputation: training_median
+    standardization: training_mean_and_population_std
+    fit_scope: training_sample_only
+    categorical_unknown: missing_bucket
+  ridge:
+    alpha_grid: [0.01, 0.1, 1.0, 10.0, 100.0]
+    solver: lsqr
+  elastic_net:
+    alpha_grid: [0.0001, 0.001, 0.01, 0.1]
+    l1_ratio_grid: [0.05, 0.25, 0.5]
+    max_iter: 2000
+    tolerance: 0.0001
+  hyperparameter_selection:
+    period: model_selection_validation
+    metric: mean_daily_spearman_rank_ic
+    strict_oos_used: false
+  expanding_oos:
+    annual_refit: true
+    use_prior_oos_labels_after_they_mature: true
+    purge_rule: "training label_end_session_id_10d < evaluation_start_session_id"
+    embargo_trading_days: 20
+    embargo_application: "training label cutoff is evaluation_start_session_id minus 20; do not skip contiguous annual OOS evaluation dates"
+
+market_regimes:
+  construction: trailing_only
+  lookback_sessions: 756
+  minimum_history_sessions: 252
+  trend_variable: market_return_60d
+  volatility_variable: market_realized_volatility_20d
+  threshold: trailing_median_excluding_current_session
+
+governance:
+  feature_contract_frozen: true
+  hyperparameter_grid_frozen_before_strict_oos: true
+  report_validation_and_oos_separately: true
+  no_strict_oos_model_selection: true
+  no_tree_model_in_gate4: true

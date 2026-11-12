@@ -1,0 +1,41 @@
+version: 1
+name: crsp_ciz_canonical_v1
+source_format: single_member_zip_csv
+source_glob: "*.zip"
+chunk_size: 250000
+
+outputs:
+  root_name: "canonical_v1"
+  security_day_dataset: "security_day"
+  distribution_dataset: "distributions"
+  partition_column: "year"
+  parquet_compression: "zstd"
+  parquet_compression_level: 6
+
+keys:
+  security_day: ["permno", "date"]
+  distribution_provenance:
+    - "source_file"
+    - "source_row_number"
+
+duplicate_policy:
+  require_contiguous_duplicate_runs: true
+  require_daily_field_consistency: true
+  preserve_distribution_records: true
+  silently_keep_first_allowed: false
+
+delisting_policy:
+  retain_flagged_rows: true
+  missing_return_imputation: none
+  label_contract_status: phase2b_frozen
+  ciz_dlyret_includes_calculable_delisting_return: true
+  valid_terminal_treatment: compound_then_hold_cash
+  missing_terminal_primary: missing
+  sensitivity_terminal_values: [-1.0, 0.0]
+
+build_policy:
+  refuse_existing_final_output: true
+  use_unique_staging_directory: true
+  atomic_rename_on_success: true
+  verify_source_size_and_mtime_unchanged: true
+  hash_output_files: true

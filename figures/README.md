@@ -1,0 +1,1 @@
+Source: `reports/tables/gate5_boundary_clean_2014_2025.csv` for `rank_ic.png`; `reports/tables/gate6_performance_summary.csv` for `gross_returns.png`; `reports/tables/gate6_cost_stress.csv` for `cost_stress.png`. All are original saved aggregate results, filtered to 2014–2025. Recreate with `python scripts/plot_public_results.py`.

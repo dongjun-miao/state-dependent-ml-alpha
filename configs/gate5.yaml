@@ -1,0 +1,218 @@
+version: 2
+status: frozen_after_gate4_before_gate5_fit
+frozen_at: "2026-07-31T16:33:32+08:00"
+revision_reason: "Pre-fit audit added the missing validation-to-OOS label-end purge and 20-session embargo."
+random_seed: 20260731
+
+governance:
+  analysis_classification: secondary_locked_post_gate4
+  gate4_strict_oos_already_observed: true
+  confirmatory_untouched_oos_claim_allowed: false
+  feature_groups_derived_only_from_frozen_gate3_roles: true
+  tree_grid_may_not_use_gate4_oos_results: true
+  selection_period: "2010-2012"
+  strict_oos_period: "2013-2025"
+  strict_oos_used_for_selection: false
+  repeated_oos_tuning_prohibited: true
+  random_stock_date_split_prohibited: true
+  new_features_prohibited: true
+  volume_as_primary_alpha_prohibited: true
+  source_models_config_sha256: "1ba44fdb18662e32c50717b712b7cb427ba173743aadb8dfaa05c3d9665f99b2"
+  source_gate4_schema: state_alpha_gate4_baselines_v1
+  source_gate4_boundary_disclosure:
+    gate4_validation_rows: 73919
+    labels_reaching_2013_rows: 1065
+    rows_excluded_by_purge_plus_20d_embargo: 2965
+    gate4_2013_classification: transition_sensitivity
+    boundary_clean_comparison_period: "2014-2025"
+
+periods:
+  initial_train: ["2001-01-02", "2009-12-31"]
+  model_selection_validation: ["2010-01-04", "2012-12-31"]
+  strict_oos: ["2013-01-02", "2025-12-31"]
+  retrain_frequency: annual
+  purge_rule: "training label_end_session_id_10d < evaluation_start_session_id"
+  embargo_trading_days: 20
+  embargo_application: "training label cutoff only; retain every annual OOS evaluation date"
+  model_selection_boundary:
+    strict_oos_start_session_source: "minimum 2013 market-calendar session_id"
+    validation_rule: "validation label_end_session_id_10d < strict_oos_start_session_id - 20"
+    expected_clean_selection_rows: 70954
+    expected_clean_selection_max_date: "2012-11-14"
+
+feature_groups:
+  alpha_primitives:
+    - rs_excess_return_20d
+    - rs_excess_return_60d
+    - rs_excess_return_126d
+    - rs_percentile_60d
+    - rs_acceleration_20_minus_60d
+    - price_distance_prior_high_126d
+    - price_distance_ma_20d
+    - trend_distance_vol_normalized_60d
+    - reversal_5d
+    - drawdown_20d
+    - drawdown_60d
+    - distance_52w_high
+    - momentum_slope_reversal
+    - recovery_above_ma_10d
+  alpha_family_composites:
+    - family_relative_strength
+    - family_price_trend
+    - family_oversold_recovery
+  state_continuous:
+    - log_lagged_market_cap
+    - beta_252d
+    - realized_volatility_20d
+    - realized_volatility_60d
+    - idiosyncratic_volatility_60d
+    - momentum_126_21d
+    - log_adv20_usd
+    - turnover_20d
+    - amihud_illiquidity_20d
+    - zero_return_frequency_20d
+    - log_price
+    - quoted_spread_proxy
+    - abnormal_turnover_20d
+    - extreme_absolute_return
+    - maximum_daily_return_20d
+    - volatility_expansion_20_60d
+    - market_return_20d
+    - market_return_60d
+    - market_realized_volatility_20d
+    - market_drawdown_126d
+    - cross_sectional_return_dispersion
+    - market_breadth_20d
+  categorical_controls:
+    - industry_code_2digit
+    - exchange
+
+linear_ablation:
+  estimator: ridge
+  alpha: 0.01
+  solver: lsqr
+  parameter_source: "Gate 4 validation-selected Ridge; fixed for every ablation"
+  variants:
+    ridge_alpha_only:
+      continuous_groups: [alpha_primitives, alpha_family_composites]
+      include_categorical_controls: false
+      include_explicit_interactions: false
+    ridge_state_only:
+      continuous_groups: [state_continuous]
+      include_categorical_controls: true
+      include_explicit_interactions: false
+    ridge_main_effects:
+      continuous_groups: [alpha_primitives, alpha_family_composites, state_continuous]
+      include_categorical_controls: true
+      include_explicit_interactions: false
+    ridge_explicit_interactions:
+      source: "reuse exact Gate 4 ridge_score predictions"
+      include_explicit_interactions: true
+
+tree:
+  backend: sklearn.ensemble.HistGradientBoostingRegressor
+  backend_reason: "preregistered local fallback; LightGBM and XGBoost absent in the frozen environment audit"
+  target: fwd_total_return_rank_10d
+  optimizer_sample:
+    source: "Gate 4 deterministic annual optimizer samples"
+    maximum_expanding_training_rows: 300000
+    cap_method: "deterministic chronological stride after purge and embargo"
+    evaluation_is_sampled: false
+  variants:
+    tree_alpha_only:
+      continuous_groups: [alpha_primitives, alpha_family_composites]
+    tree_state_only:
+      continuous_groups: [state_continuous]
+    tree_alpha_state:
+      continuous_groups: [alpha_primitives, alpha_family_composites, state_continuous]
+  common_parameters:
+    loss: squared_error
+    max_bins: 63
+    max_depth: null
+    max_features: 1.0
+    early_stopping: false
+    random_state: 20260731
+  candidate_grid:
+    - candidate_id: shallow_7
+      learning_rate: 0.05
+      max_iter: 120
+      max_leaf_nodes: 7
+      min_samples_leaf: 1000
+      l2_regularization: 10.0
+    - candidate_id: slow_15
+      learning_rate: 0.03
+      max_iter: 180
+      max_leaf_nodes: 15
+      min_samples_leaf: 1000
+      l2_regularization: 10.0
+    - candidate_id: regularized_15
+      learning_rate: 0.05
+      max_iter: 120
+      max_leaf_nodes: 15
+      min_samples_leaf: 2000
+      l2_regularization: 30.0
+  hyperparameter_selection:
+    fit_variant: tree_alpha_state
+    metric: mean_daily_spearman_rank_ic
+    period: model_selection_validation
+    validation_to_oos_purge_and_embargo: true
+    tie_break: "fewer leaves, fewer iterations, lower learning rate, candidate order"
+    apply_selected_candidate_to_all_tree_variants: true
+
+evaluation:
+  full_valid_primary_rows: true
+  scores:
+    - base_family_score
+    - ridge_alpha_only
+    - ridge_state_only
+    - ridge_main_effects
+    - ridge_explicit_interactions
+    - tree_alpha_only
+    - tree_state_only
+    - tree_alpha_state
+    - linear_capped_gate
+    - tree_capped_gate
+  metrics:
+    - daily_spearman_rank_ic
+    - decile_spread
+    - one_way_membership_turnover
+    - newey_west_t_20
+    - positive_year_fraction
+    - market_regime_stability
+  paired_comparisons:
+    - [ridge_main_effects, ridge_alpha_only]
+    - [ridge_explicit_interactions, ridge_main_effects]
+    - [ridge_explicit_interactions, ridge_state_only]
+    - [tree_alpha_state, tree_alpha_only]
+    - [tree_alpha_state, tree_state_only]
+    - [tree_alpha_state, ridge_explicit_interactions]
+    - [linear_capped_gate, base_family_score]
+    - [tree_capped_gate, base_family_score]
+  boundary_clean_sensitivity:
+    period: "2014-2025"
+    reason: "Gate 4 source Ridge selection used 1,065 validation labels reaching 2013; 2013 is shown but not treated as boundary-clean."
+
+mechanism:
+  classification: diagnostic_not_portfolio
+  reference_signal: base_family_score
+  high_conviction_rule: "absolute same-day centered percentile rank >= 0.40"
+  linear_conditional_component: "ridge_explicit_interactions - ridge_main_effects"
+  tree_conditional_component: "tree_alpha_state - tree_alpha_only"
+  conditional_component_transform: "same-day centered percentile rank"
+  capped_gate_rule: "2 * abs(conditional centered rank) when its sign aligns with base exposure; zero otherwise"
+  amplification_allowed: false
+  realized_payoff: "sign(base centered rank) * fwd_total_return_10d"
+  attribution:
+    - suppressed_fraction
+    - adverse_state_loss_avoided
+    - favorable_state_gain_sacrificed
+    - net_suppression_effect
+    - retained_signal_payoff
+  warning: "mechanism attribution is not self-financing portfolio P&L"
+
+outputs:
+  artifact: data/processed/gate5_v1
+  no_overwrite: true
+  atomic_publish: true
+  hash_every_file: true
+  transparent_model_states: true
